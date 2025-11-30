@@ -15,13 +15,22 @@ class AuthService {
     }
   }
 
-  static Future register(String email, String password) async {
+  static Future register(
+    String email,
+    String password,
+    String name
+  ) async {
     try {
-      final res = await _supabase.auth.signUp(
-        email: email,
-        password: password,
+      final res = await _supabase.auth.signUp(email: email, password: password);
+
+      if (res.user == null) return "Error en registrar";
+
+      // Assignar el nom complet
+      await _supabase.auth.updateUser(
+        UserAttributes(data: {'display_name': "$name"}),
       );
-      return res.user != null ? true : "Error en registrar";
+
+      return true;
     } catch (e) {
       return e.toString();
     }

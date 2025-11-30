@@ -1,172 +1,129 @@
 import 'package:flutter/material.dart';
+import 'widgets/device_summary_card.dart';
+import 'widgets/alert_summary_card.dart';
+import 'widgets/sensor_card.dart';
+import 'widgets/alerts_list.dart';
+import '../widgets/custom_app_bar.dart';
 
-class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+class DashboardScreen extends StatelessWidget {
+  final Function(int) onSensorTap;
 
-  @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
+  DashboardScreen({super.key, required this.onSensorTap});
+  final mockDevices = [
+    {
+      "id": 1,
+      "name": "Sensor Pou 1",
+      "pressure": 3.2,
+      "lastUpdate": "Fa 5 min",
+      "status": "online",
+      "power": "main",
+      "todayValues": [2.8, 2.9, 3.1, 3.3, 3.2, 3.0],
+    },
+    {
+      "id": 2,
+      "name": "Sensor Pou 2",
+      "pressure": 0.0,
+      "lastUpdate": "Fa 2 h",
+      "status": "offline",
+      "power": "battery",
+      "todayValues": [0, 0, 0, 0, 0],
+    },
+  ];
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  double currentPressure = 2.4; // placeholder temporal
-  String lastUpdate = "Fa 10 segons";
-  bool online = true;
+  final mockAlerts = [
+    {
+      "date": "2025-01-13 14:22",
+      "sensor": "Pou 1",
+      "description": "Pressió baixa detectada",
+      "status": "pending",
+    },
+    {
+      "date": "2025-01-13 09:10",
+      "sensor": "Pou 2",
+      "description": "Ha tornat la llum",
+      "status": "info",
+    },
+    {
+      "date": "2025-01-12 19:40",
+      "sensor": "Pou 1",
+      "description": "Fuita reparada",
+      "status": "resolved",
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Estat del Reg"),
-        backgroundColor: const Color(0xFF4e73df),
-        centerTitle: true,
-      ),
+    final activeDevices = mockDevices
+        .where((d) => d["status"] == "online")
+        .length;
+    final pendingAlerts = mockAlerts
+        .where((a) => a["status"] == "pending")
+        .length;
 
+    return Scaffold(
+      appBar: const AppTopBar(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            _buildDeviceHeader(),
-
-            const SizedBox(height: 20),
-
-            _buildPressureCard(),
-
-            const SizedBox(height: 20),
-
-            _buildMiniChart(),
-
-            const SizedBox(height: 30),
-
-            _buildButtons(context),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // -------------------------
-  // Widget 1: Header dispositiu
-  // -------------------------
-  Widget _buildDeviceHeader() {
-    return Row(
-      children: [
-        Icon(
-          online ? Icons.check_circle : Icons.cancel,
-          size: 28,
-          color: online ? Colors.green : Colors.red,
-        ),
-        const SizedBox(width: 12),
-        Text(
-          online ? "Dispositiu online" : "Dispositiu offline",
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-      ],
-    );
-  }
-
-  // -------------------------
-  // Widget 2: Targeta pressió
-  // -------------------------
-  Widget _buildPressureCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Pressió Actual",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-
+            // --------- Row amb les dues targetes superiors -------------
             Row(
               children: [
-                Text(
-                  "$currentPressure bar",
-                  style: const TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF4e73df),
+                Expanded(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      // Navega a la llista de dispositius (ruta /devices si existeix)
+                      Navigator.pushNamed(context, "/devices");
+                    },
+                    child: DeviceSummaryCard(
+                      active: activeDevices,
+                      total: mockDevices.length,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                Icon(
-                  Icons.water_drop,
-                  size: 36,
-                  color: Colors.blue[300],
-                )
+                Expanded(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      // Navega a la pantalla d'alertes (ruta /alerts si existeix)
+                      Navigator.pushNamed(context, "/alerts");
+                    },
+                    child: AlertSummaryCard(count: pendingAlerts),
+                  ),
+                ),
               ],
             ),
 
+            const SizedBox(height: 20),
+
+            // SENSORS (cada targeta per sensor)
+            Column(
+              children: mockDevices.map((s) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: GestureDetector(
+                    onTap: () => onSensorTap(s["id"] as int),
+                    child: SensorCard(sensor: s),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "Alertes recents",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+            ),
             const SizedBox(height: 10),
-            Text(
-              "Última actualització: $lastUpdate",
-              style: TextStyle(color: Colors.grey[600]),
-            )
+
+            AlertsList(alerts: mockAlerts),
           ],
         ),
       ),
-    );
-  }
-
-  // -------------------------
-  // Widget 3: Mini gràfica fake
-  // -------------------------
-  Widget _buildMiniChart() {
-    return Container(
-      height: 160,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(blurRadius: 4, color: Colors.black12),
-        ],
-      ),
-      child: const Center(
-        child: Text(
-          "Mini gràfica (placeholder)\nDesprés hi posem la real",
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-
-  // -------------------------
-  // Widget 4: Botons
-  // -------------------------
-  Widget _buildButtons(BuildContext context) {
-    return Column(
-      children: [
-        ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF4e73df),
-            minimumSize: const Size.fromHeight(50),
-          ),
-          icon: const Icon(Icons.show_chart),
-          label: const Text("Veure anàlisi"),
-          onPressed: () {
-            Navigator.pushNamed(context, "/analysis");
-          },
-        ),
-
-        const SizedBox(height: 12),
-
-        OutlinedButton.icon(
-          icon: const Icon(Icons.settings),
-          label: const Text("Configuració del dispositiu"),
-          onPressed: () {
-            Navigator.pushNamed(context, "/devices");
-          },
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(50),
-          ),
-        ),
-      ],
     );
   }
 }
