@@ -27,7 +27,7 @@ class AuthService {
 
       // Assignar el nom complet
       await _supabase.auth.updateUser(
-        UserAttributes(data: {'display_name': "$name"}),
+        UserAttributes(data: {'display_name': name}),
       );
 
       return true;
